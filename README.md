@@ -1,5 +1,5 @@
 # private_message_python
-A simple end-to-end encrypted private messaging system, which also includes login/register in Python
+A simple end-to-end encrypted instant private messaging system, which also includes login/register in Python
 
 
 #How to:
