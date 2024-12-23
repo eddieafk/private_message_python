@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <script>
+        async function sendMessage() {
+            const sender = document.getElementById("sender").value;
+            const recipient = document.getElementById("recipient").value;
+            const content = document.getElementById("message").value;
+
+            if (!recipient || !content) {
+                alert("Recipient and message cannot be empty.");
+                return;
+            }
+
+            const response = await fetch("/send", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ sender, recipient, content })
+            });
+
+            if (response.ok) {
+                document.getElementById("message").value = "";
+                alert("Message sent!");
+            } else {
+                alert("Failed to send message.");
+            }
+        }
+
+        async function fetchMessages() {
+            const recipient = document.getElementById("sender").value;
+
+            const response = await fetch("/receive", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ recipient })
+            });
+
+            if (response.ok) {
+                const messages = await response.json();
+                const chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML = "";
+                messages.forEach(msg => {
+                    const messageElement = document.createElement("div");
+                    messageElement.textContent = `${msg.sender}: ${msg.content}`;
+                    chatBox.appendChild(messageElement);
+                });
+            } else {
+                alert("Failed to fetch messages.");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Welcome to the Chat</h1>
+    <button onclick="location.href='/logout'">Logout</button>
+    <div>
+        <label for="sender">Sender:</label>
+        <input type="text" id="sender" value="{{ username }}" readonly>
+    </div>
+    <div>
+        <label for="recipient">Recipient:</label>
+        <input type="text" id="recipient" placeholder="Recipient Username">
+    </div>
+    <div>
+        <label for="message">Message:</label>
+        <input type="text" id="message" placeholder="Type your message">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div>
+        <h2>Messages</h2>
+        <button onclick="fetchMessages()">Refresh Messages</button>
+        <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; max-height: 200px; overflow-y: scroll;">
+            <!-- Messages will appear here -->
+        </div>
+    </div>
+</body>
+</html>
