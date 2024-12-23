@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from threading import Thread
 import sqlite3
 import os
 from cryptography.fernet import Fernet
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///messages.db'
@@ -14,6 +17,7 @@ db = SQLAlchemy(app)
 
 db_file = "messages.db"
 encryption_key_file = "key.key"
+socketio = SocketIO(app)
 
 # Generate or load encryption key
 if not os.path.exists(encryption_key_file):
@@ -108,6 +112,12 @@ def send_message():
     db.session.add(new_message)
     db.session.commit()
 
+    # Alıcıya mesajı gerçek zamanlı ilet
+    socketio.emit('new_message', {
+        'sender': sender,
+        'content': data['content']
+    }, room=recipient)
+
     return jsonify({"status": "Message sent!"})
 
 @app.route('/receive', methods=['POST'])
@@ -126,10 +136,19 @@ def receive_messages():
 
     return jsonify(decrypted_messages)
 
+@socketio.on('join')
+def on_join(data):
+    username = data['username']
+    join_room(username)
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    leave_room(username)
+
+
 def run_flask():
     app.run(debug=True, use_reloader=False, threaded=True)
 
 if __name__ == "__main__":
-    # Start Flask in a separate thread
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
+    socketio.run(app, debug=True, use_reloader=False)
