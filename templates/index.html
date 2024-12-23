@@ -4,7 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
+        const socket = io();
+
+        function joinChat() {
+            const username = document.getElementById("sender").value;
+            socket.emit('join', { username });
+        }
+
+        socket.on('new_message', (data) => {
+            const chatBox = document.getElementById("chat-box");
+            const messageElement = document.createElement("div");
+            messageElement.textContent = `${data.sender}: ${data.content}`;
+            chatBox.appendChild(messageElement);
+        });
+
         async function sendMessage() {
             const sender = document.getElementById("sender").value;
             const recipient = document.getElementById("recipient").value;
@@ -25,36 +40,12 @@
 
             if (response.ok) {
                 document.getElementById("message").value = "";
-                alert("Message sent!");
             } else {
                 alert("Failed to send message.");
             }
         }
 
-        async function fetchMessages() {
-            const recipient = document.getElementById("sender").value;
-
-            const response = await fetch("/receive", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ recipient })
-            });
-
-            if (response.ok) {
-                const messages = await response.json();
-                const chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML = "";
-                messages.forEach(msg => {
-                    const messageElement = document.createElement("div");
-                    messageElement.textContent = `${msg.sender}: ${msg.content}`;
-                    chatBox.appendChild(messageElement);
-                });
-            } else {
-                alert("Failed to fetch messages.");
-            }
-        }
+        window.onload = joinChat;
     </script>
 </head>
 <body>
@@ -75,7 +66,6 @@
     </div>
     <div>
         <h2>Messages</h2>
-        <button onclick="fetchMessages()">Refresh Messages</button>
         <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; max-height: 200px; overflow-y: scroll;">
             <!-- Messages will appear here -->
         </div>
